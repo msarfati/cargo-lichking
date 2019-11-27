@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use cargo::core::Package;
 use cargo::CargoResult;
-use itertools::Itertools;
 
 use crate::licensed::Licensed;
 use crate::options::By;
@@ -19,22 +18,19 @@ pub fn run(mut packages: Vec<Package>, by: By) -> CargoResult<()> {
                     .push(package);
             }
 
-            license_to_packages
-                .iter()
-                .sorted_by_key(|&(license, _)| license)
-                .for_each(|(license, packages)| {
-                    let packages = packages
-                        .iter()
-                        .map(|package| package.name())
-                        .sorted()
-                        .join(", ");
-                    println!("{}: {}", license, packages);
-                })
+            let mut license_to_packages = license_to_packages.iter().collect::<Vec<_>>();
+            license_to_packages.sort_by_key(|&(license, _)| license);
+
+            for (license, packages) in license_to_packages {
+                let packages = packages.iter().map(|package| package.name().as_str()).collect::<Vec<&str>>().join(", ");
+                println!("{}: {}", license, packages);
+            }
         }
         By::Crate => {
+            println!("library,version,license,url");
             packages.sort_by_key(|package| package.name().to_owned());
             for package in packages {
-                println!("{}: {}", package.name(), package.license());
+                println!("{},{},{},https://crates.io/crates/{}", package.name(), package.version(), package.license(), package.name());
             }
         }
     }
